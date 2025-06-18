@@ -1,23 +1,26 @@
-def get_students():
-    return [
-        {"id": 1, "nombre": "Ana"},
-        {"id": 2, "nombre": "Luis"},
-        {"id": 3, "nombre": "María"},
-        {"id": 4, "nombre": "Carlos"},
-        {"id": 5, "nombre": "Sofía"},
-        {"id": 6, "nombre": "Pedro"},
-        {"id": 7, "nombre": "Lucía"},
-        {"id": 8, "nombre": "Miguel"},
-        {"id": 9, "nombre": "Valentina"},
-        {"id": 10, "nombre": "Javier"},
-    ]
+import PyPDF2
+from io import BytesIO
 
 def main(context):
     if context.req.method != "POST":
         return context.res.text("Método no permitido, use POST", status_code=405)
-    
-    if context.req.path == "/students":
-        students = get_students()
-        return context.res.json({"students": students})
-    
-    return context.res.text("Ruta no encontrada", status_code=404)
+
+    files = context.req.files
+    if 'file' not in files:
+        return context.res.text("No se encontró archivo 'file' en la petición", status_code=400)
+
+    file = files['file']
+    pdf_bytes = BytesIO(file.data)
+
+    try:
+        reader = PyPDF2.PdfReader(pdf_bytes)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+
+        return context.res.json({
+            "filename": file.filename,
+            "text": text[:5000]  # Limitar a 5000 caracteres para evitar respuestas muy largas
+        })
+    except Exception as e:
+        return context.res.text(f"Error al procesar PDF: {str(e)}", status_code=500)
