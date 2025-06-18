@@ -1,5 +1,5 @@
 
-from students import get_students
+from src.students import get_students
 
 def main(context):
     # Verificar que el método HTTP sea POST
